@@ -16,7 +16,7 @@ const userSchema = new Schema({
         required: true,
         unique: true,
         maxlength: 50,
-        // match: [/^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/, 'Please fill a valid email address'], // Kiểm tra email hợp lệ
+        match: [/^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/, 'Please fill a valid email address'],
     },
     password: {
         type: String,
@@ -53,16 +53,16 @@ const userSchema = new Schema({
 }, { timestamps: true });
 
 // Mã hóa mật khẩu trước khi lưu vào DB
-// userSchema.pre('save', async function (next) {
-//   if (!this.isModified('password')) return next(); // Chỉ mã hóa nếu mật khẩu đã thay đổi
-//   this.password = await bcrypt.hash(this.password, 10); // Mã hóa mật khẩu với bcrypt
-//   next();
-// });
+userSchema.pre('save', async function (next) {
+    if (!this.isModified('password')) return next(); // Chỉ mã hóa nếu mật khẩu đã thay đổi
+    this.password = await bcrypt.hash(this.password, 10); // Mã hóa mật khẩu với bcrypt
+    next();
+});
 
 // Phương thức xác minh mật khẩu
-// userSchema.methods.comparePassword = async function (candidatePassword) {
-//   return bcrypt.compare(candidatePassword, this.password); // So sánh mật khẩu đã mã hóa
-// };
+userSchema.methods.comparePassword = async function (candidatePassword) {
+    return bcrypt.compare(candidatePassword, this.password); // So sánh mật khẩu đã mã hóa
+};
 
 // Tạo model từ schema
 const User = mongoose.model('User', userSchema);
