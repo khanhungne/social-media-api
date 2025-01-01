@@ -7,6 +7,7 @@ const helmet = require("helmet");
 const authRoutes = require('./routes/v1/auth');
 const userRoutes = require('./routes/v1/user');
 const postRoutes = require('./routes/v1/posts');
+const commentRoutes = require('./routes/v1/comment');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -20,6 +21,7 @@ app.use(helmet());
 app.use('/auth', authRoutes);
 app.use('/users', userRoutes);
 app.use('/post', postRoutes);
+app.use('/comment', commentRoutes);
 
 
 app.listen(PORT, () => {
