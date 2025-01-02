@@ -1,7 +1,6 @@
 const Comment = require('../models/comment');
 const Post = require('../models/post');
 const User = require('../models//user');
-const mongoose = require('mongoose');
 
 const { sendSuccess, sendBadRequest, sendNotFound, sendServerError } = require('../middlewares/response');
 
@@ -18,7 +17,6 @@ const createComment = async (req, res) => {
         if(!post) {
             return sendBadRequest(res, "Bài viết không tồn tại");
         }
-
         let nestedLevel = 1; 
         // Nếu có parentCommentId, tìm bình luận cha để xác định nestedLevel
         if(parentCommentId) {
@@ -79,12 +77,23 @@ const getChildComments = async (req, res) => {
 };
 const updateComment = async (req, res) => {
     try {
-        const { id } = req.params;
-        const updatedComment = await Comment.findByIdAndUpdate(id, req.body, { new: true });
-        if (!updatedComment) {
-            return sendBadRequest(res, "Bình luận không tồn tại");
+        const { commentId } = req.params;
+        const { userId, content } = req.body;
+        const comment = await Comment.findById(commentId)
+
+        if (!comment) {
+            return sendNotFound
+            (res, "Bình luận không tồn tại");
         }
-        sendSuccess(res, "Cập nhật bình luận thành công", updatedComment);
+        if(comment.userId.toString() !== userId.toString()) {
+            return sendBadRequest(res, "Bạn không có quyền chỉnh sửa bình luận này");
+        }
+
+        comment.content = content;
+        comment.updatedAt = new Date(); // Cập nhật thời gian sửa
+        await comment.save();
+
+        sendSuccess(res, "Chỉnh sửa bình luận thành công", comment);
     } catch (err) {
         console.error(err);
         sendServerError(res, "Lỗi khi cập nhật bình luận", err);
@@ -93,39 +102,25 @@ const updateComment = async (req, res) => {
 
 const deleteComment = async (req, res) => {
     try {
-        const { id } = req.params; // ID của bình luận cần xóa
-        const { userId } = req.body; // ID của người dùng thực hiện yêu cầu
-
-        // Tìm bình luận theo ID
-        const deletedComment = await Comment.findById(id);
-        console.log(id)
-        console.log(userId)
-        console.log(deletedComment)
-
-
-
+        const { commentId } = req.params; 
+        const { userId } = req.body; 
+        const deletedComment = await Comment.findById(commentId);
         if (!deletedComment) {
             return sendNotFound(res, "Bình luận không tồn tại");
         }
-
-        // Lấy thông tin bài viết để kiểm tra người tạo
         const post = await Post.findById(deletedComment.postId);
         if (!post) {
             return sendNotFound(res, "Bài viết không tồn tại");
         }
-
-        // Kiểm tra quyền xóa
         const isPostCreator = post.userId.toString() === userId; // Người tạo bài viết
         const isCommentCreator = deletedComment.userId.toString() === userId; // Người tạo bình luận
-
         if (!isPostCreator && !isCommentCreator) {
             return sendBadRequest(res, "Bạn không có quyền xóa bình luận này");
         }
-
+        // Xóa các bình luận con
+        await Comment.deleteMany({ parentCommentId: commentId });
         // Tiến hành xóa bình luận
-        await Comment.findByIdAndDelete(id);
-
-        // Cập nhật số lượng bình luận trong bài viết
+        await Comment.findByIdAndDelete(commentId);
         await Post.findByIdAndUpdate(deletedComment.postId, { $inc: { commentsCount: -1 } });
         sendSuccess(res, "Xóa bình luận thành công");
     } catch (err) {

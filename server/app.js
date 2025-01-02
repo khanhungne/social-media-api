@@ -14,7 +14,7 @@ const PORT = process.env.PORT || 3000;
 
 connectDB();
 
-app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(helmet());
 
