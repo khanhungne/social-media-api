@@ -1,31 +1,38 @@
-const { verifyToken } = require('../utils/generateToken');
+const { verifyToken } = require('../../utils/jwt');
 const User = require('../../models/user');
+const { sendUnauthorized, sendForbidden, sendServerError } = require('../response');
 
 // ng dùng đã đăng nhập hay chưa
-const isAuthenticated = (req, res) => {
+const isAuthenticated = (req, res, next) => {
     const token = req.headers.authorization?.split(" ")[1];
     if (!token) {
-        return res.status(401).json({ message: "Không tìm thấy token, vui lòng đăng nhập" });
+        return sendUnauthorized(res, "Không tìm thấy token, vui lòng đăng nhập");
     }
     try {
-        // giải mã token
         const decoded = verifyToken(token, process.env.JWT_ACCESS_SECRET);
-        // lưu thông tin user vào req.user
         req.user = decoded;
         next();
-    } catch (error) {
+    } catch (err) {
         console.error(err);
-        res.status(403).json({ message: "Token không hợp lệ" });
+        return sendForbidden(res, "Token không hợp lệ hoặc đã hết hạn", err);
     }
 }
 const isAdmin = async (req, res, next) => {
-    const { userId } = req.user;
-    const user = await User.findById(userId);
+    try{
+        if (!req.user) {
+            return sendUnauthorized(res, "Vui lòng đăng nhập");
+        }
+        const { userId } = req.user;
+        const user = await User.findById(userId);
 
-    if (user && user.role === 'admin') {
-        return next();
+        if (req.user.role !== 'admin') {
+            return sendForbidden(res, "Bạn không có quyền truy cập");
+        }
+        next();
+    }catch(err) {
+        console.error(err);
+        return sendServerError(res, "Lỗi kiểm tra quyền admin", err);
     }
 
-    res.status(403).json({ message: "Bạn không có quyền truy cập" });
 };
 module.exports = { isAuthenticated, isAdmin };

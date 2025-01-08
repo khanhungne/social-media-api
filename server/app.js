@@ -24,6 +24,8 @@ app.use('/users', userRoutes);
 app.use('/post', postRoutes);
 app.use('/comment', commentRoutes);
 app.use('/likes', likeRoutes);
+app.use('/relationship', likeRoutes);
+
 
 
 

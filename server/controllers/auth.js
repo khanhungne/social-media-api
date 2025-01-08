@@ -16,13 +16,6 @@ const register = async (req, res) => {
         const accessToken = createAccessToken(user);
         const refreshToken = createRefreshToken(user);
 
-        // res.status(201).json({
-        //     stautus: true,
-        //     message: "Đăng ký thành công",
-        //     user,
-        //     accessToken,
-        //     refreshToken
-        // });
         sendSuccess(res, "Đăng ký thành công", {
             user,
             accessToken,
@@ -30,11 +23,7 @@ const register = async (req, res) => {
         });
     } catch (err) {
         console.error(err);
-        // res.status(500).json({
-        //     stautus: false,
-        //     message: "Lỗi server",
-        //     err  
-        // });
+
         console.error(err);
         sendServerError(res, "Lỗi server", err);
     }
@@ -54,13 +43,6 @@ const login = async (req, res) => {
         const accessToken = createAccessToken(user);
         const refreshToken = createRefreshToken(user);
 
-        // res.status(200).json({
-        //     status: true,
-        //     message: "Đăng nhập thành công",
-        //     user,
-        //     accessToken,
-        //     refreshToken
-        // });
         sendSuccess(res, "Đăng nhập thành công", {
             user,
             accessToken,
@@ -69,7 +51,6 @@ const login = async (req, res) => {
 
     } catch (err) {
         console.error(err);
-        // res.status(500).json({ stautus: false, message: "Lỗi server" }, err);
         console.error(err);
         sendServerError(res, "Lỗi server", err);
     }
@@ -77,13 +58,8 @@ const login = async (req, res) => {
 const logout = async (req, res) => {
     try {
         sendSuccess(res, 'Đăng xuất thành công');
-        // res.status(200).json({
-        //     success: true,
-        //     message: 'Đăng xuất thành công'
-        // });
     } catch (err) {
         console.error(err);
-        // res.status(500).json({ stautus: false, message: "Lỗi server" }, err);
         sendServerError(res, "Lỗi server", err);
     }
 
@@ -91,26 +67,27 @@ const logout = async (req, res) => {
 const refreshToken = async (req, res) => {
     const { refreshToken } = req.body;
     if (!refreshToken) {
-        // return res.status(401).json({ message: 'Refresh token là bắt buộc' });
         return sendUnauthorized(res, 'Refresh token là bắt buộc');
     }
 
     try {
         const decoded = verifyToken(refreshToken, process.env.JWT_REFRESH_SECRET);
+        const user = await User.findById(decoded.id);
+
+        if (!user || user.refreshToken !== refreshToken) {
+            return sendUnauthorized(res, "Refresh token không hợp lệ hoặc đã hết hạn");
+        }
+
         const newAccessToken = generateToken(
             { id: decoded.id, role: decoded.role },
             process.env.JWT_ACCESS_SECRET,
             { expiresIn: '15m' }
         );
 
-        // res.status(200).json({ accessToken: newAccessToken });
         sendSuccess(res, "Token mới đã được cấp", { accessToken: newAccessToken });
-
     } catch (err) {
         console.error(err);
-        // res.status(403).json({ message: 'Refresh token không hợp lệ' });
         sendUnauthorized(res, 'Refresh token không hợp lệ', err);
-
     }
 };
 const createAccessToken = (user) => {
