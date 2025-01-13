@@ -1,0 +1,15 @@
+:root {
+    --primary: #7abc00;
+    --dark: #000;
+    --light: #fff;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'ProximaNova', sans-serif;
+}

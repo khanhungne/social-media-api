@@ -1,0 +1,99 @@
+*{
+    background-color: var(--dark);
+
+}
+.Auth {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    width: 100vw;
+    gap: 4rem;
+    position: relative;
+}
+.Auth>div {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.login-container{
+    width: 60%;
+}
+
+/* left side */
+.a-left {
+    gap: 2rem;
+}
+.Webname{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    width: 100%;
+}
+
+.logo {
+    width: 200px;
+    height: 100px;
+
+}
+
+.Webname>h6 {
+    font-size: 1rem;
+    margin-top: 10px;
+    color: var(--light);
+}
+
+
+
+/* right side */
+.a-right h3{
+    color: var(--light);
+}
+
+.input-section{
+    margin: 6px;
+}
+
+.infoInput {
+    height: 40px;
+    border-radius: 8px;
+    outline: none;
+    background-color: #ebedec;
+    border: none;
+    gap: 4px;
+    padding: 0 8px;
+}
+
+
+.toggle-btn{
+    display: flex;
+    justify-content: flex-end;
+    font-size: 12px;
+    cursor: pointer;
+    margin-top: -3px;
+    margin-bottom: 12px;
+    color: var(--light);
+    font-style: oblique;
+}
+.toggle-link{
+    text-decoration: none;
+    color: var(--light);
+}
+.infoButton{
+    background-color: var(--primary);
+    color: var(--light);
+    outline: none;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 0;
+}
+
+
+
+/* responsive */
+@media (max-width: 768px) {
+    .login-container{
+        width: 110%;
+    }
+}
