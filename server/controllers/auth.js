@@ -4,26 +4,22 @@ const { sendSuccess, sendServerError } = require('../middlewares/response');
 const register = async (req, res) => {
     const { username, name, email, password } = req.body;
     try {
-        const existingUser = await User.findOne({ $or: [{ email }, { username }] });
-        if (existingUser) {
-            return res.status(400).json({ message: "Email hoặc Username đã tồn tại" });
+        const existingUsername = await User.findOne({ username });
+        const existingEmail = await User.findOne({ email });
+        if (existingUsername) {
+            return res.status(400).json({ message: "Username đã tồn tại" });
+        }
+        if (existingEmail) {
+            return res.status(400).json({ message: "Email đã tồn tại" });
         }
         const user = new User({
             username, name, email, password,
         });
         await user.save();
-
-        const accessToken = createAccessToken(user);
-        const refreshToken = createRefreshToken(user);
-
-        sendSuccess(res, "Đăng ký thành công", {
-            user,
-            accessToken,
-            refreshToken
-        });
+        // const accessToken = createAccessToken(user);
+        // const refreshToken = createRefreshToken(user);
+        return res.status(201).json({ message: "Đăng ký thành công", user });
     } catch (err) {
-        console.error(err);
-
         console.error(err);
         sendServerError(res, "Lỗi server", err);
     }
@@ -39,18 +35,14 @@ const login = async (req, res) => {
         if (!isMatch) {
             return res.status(400).json({ message: "Email hoặc mật khẩu không đúng" });
         }
+        // const accessToken = createAccessToken(user);
+        // const refreshToken = createRefreshToken(user);
 
-        const accessToken = createAccessToken(user);
-        const refreshToken = createRefreshToken(user);
-
-        sendSuccess(res, "Đăng nhập thành công", {
-            user,
-            accessToken,
-            refreshToken
+        res.status(200).json({
+            status: true,
+            message: "Đăng nhập thành công",
         });
-
     } catch (err) {
-        console.error(err);
         console.error(err);
         sendServerError(res, "Lỗi server", err);
     }
