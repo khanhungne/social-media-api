@@ -12,6 +12,7 @@ const commentRoutes = require('./routes/v1/comment');
 const likeRoutes = require('./routes/v1//like');
 const messageRoutes = require('./routes/v1/message');
 const chatRoutes = require('./routes/v1/chat');
+const relationshipRoutes = require('./routes/v1/relationship');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -28,7 +29,7 @@ app.use('/users', userRoutes);
 app.use('/post', postRoutes);
 app.use('/comment', commentRoutes);
 app.use('/likes', likeRoutes);
-app.use('/relationship', likeRoutes);
+app.use('/relationship', relationshipRoutes);
 app.use('/chat', chatRoutes);
 app.use('/message', messageRoutes);
 
