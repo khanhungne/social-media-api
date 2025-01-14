@@ -18,7 +18,9 @@ const register = async (req, res) => {
         await user.save();
         // const accessToken = createAccessToken(user);
         // const refreshToken = createRefreshToken(user);
-        return res.status(201).json({ message: "Đăng ký thành công", user });
+        // return res.status(201).json({ message: "Đăng ký thành công", user });
+        const { password: _, ...userWithoutPassword } = user.toObject();
+        sendSuccess(res, "Đăng ký thành công", {user: userWithoutPassword})
     } catch (err) {
         console.error(err);
         sendServerError(res, "Lỗi server", err);
@@ -35,13 +37,15 @@ const login = async (req, res) => {
         if (!isMatch) {
             return res.status(400).json({ message: "Email hoặc mật khẩu không đúng" });
         }
-        // const accessToken = createAccessToken(user);
-        // const refreshToken = createRefreshToken(user);
+        const accessToken = createAccessToken(user);
+        const refreshToken = createRefreshToken(user);
+        const { password: _, ...userWithoutPassword } = user.toObject();
 
-        res.status(200).json({
-            status: true,
-            message: "Đăng nhập thành công",
-        });
+        // res.status(200).json({
+        //     status: true,
+        //     message: "Đăng nhập thành công",
+        // });
+        sendSuccess(res, "Đăng nhập thành công",{accessToken, refreshToken, user: userWithoutPassword})
     } catch (err) {
         console.error(err);
         sendServerError(res, "Lỗi server", err);
