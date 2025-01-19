@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
     Box,
     Button,
@@ -8,9 +8,49 @@ import {
     FormControlLabel,
     Checkbox,
 } from '@mui/material';
+import authScreenAtom from '../../atoms/authAtom';
+import userScreenAtom  from '../../atoms/userAtom';
 import { Google } from '@mui/icons-material';
+import { useSetRecoilState } from 'recoil';
+import useShowToast from '../../hooks/userShowSnackbar';
 
 export default function LoginCard() {
+    const [inputs, setInputs] = useState({email: '', password:''});
+    const [isLoading, setIsLoading] = useState(false);
+    const { showToast, ToastComponent } = useShowToast();
+
+    const setAuthScreen = useSetRecoilState(authScreenAtom); // Quản lý màn hình
+    const setUser = useSetRecoilState(userScreenAtom); // Lưu thông tin người dùng
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        console.log(e)
+        setInputs((prev) => ({ ...prev, [name]: value }));
+    }
+    const handleLogin = async (e) =>{
+        try{
+            const res = await fetch("/auth/login", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify(inputs),
+              })
+                .then((response) => response.json())
+                .then((data) => console.log(data))
+                .catch((error) => console.error("Error:", error));
+            console.log(res)
+            const data = await res.json();
+            if(data.error){
+                showToast(data.error, 'error');  // Gọi showToast khi có lỗi
+                return;
+            }
+            localStorage.setItem("user-threads", JSON.stringify(data));
+            setUser(data);
+            showToast('Login successful!', 'success');
+        }catch(error){
+            showToast('An error occurred while logging in', 'error');   
+        }
+    }
     return (
         <Container component="main" maxWidth="xs">
             <Box
@@ -46,7 +86,10 @@ export default function LoginCard() {
                     fullWidth
                     label="Email"
                     type="email"
+                    name="email"
                     placeholder="your@email.com"
+                    value={inputs.email}
+                    onChange={handleChange}                 
                 />
                 <TextField
                     margin="normal"
@@ -54,7 +97,10 @@ export default function LoginCard() {
                     fullWidth
                     label="Password"
                     type="password"
+                    name="password"
                     placeholder="******"
+                    value={inputs.password}
+                    onChange={handleChange}                 
                 />
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 4 }}>
                     <FormControlLabel
@@ -70,6 +116,7 @@ export default function LoginCard() {
                     variant="contained"
                     color="primary"
                     sx={{ mb: 2 }}
+                    onClick={handleLogin}
                 >
                     Sign In
                 </Button>
@@ -80,6 +127,7 @@ export default function LoginCard() {
                         </Button>
                 </Typography>
             </Box>
+            {ToastComponent}
         </Container>
     );
 }

@@ -23,7 +23,16 @@ app.use(cors());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(helmet());
-
+app.use(
+    helmet.contentSecurityPolicy({
+      directives: {
+        defaultSrc: ["'self'"],
+        connectSrc: ["'self'", "https://infragrid.v.network"], // Cho phép kết nối đến https://infragrid.v.network
+        // Bạn có thể thêm các nguồn khác nếu cần
+      },
+    })
+  );
+  
 app.use('/auth', authRoutes);
 app.use('/users', userRoutes);
 app.use('/post', postRoutes);
