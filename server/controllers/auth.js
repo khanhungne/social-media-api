@@ -1,24 +1,24 @@
 const User = require('../models/user');
 const { generateToken, verifyToken } = require('../utils/jwt');
-const { sendSuccess, sendServerError } = require('../middlewares/response');
+const { sendSuccess, sendServerError, sendBadRequest } = require('../middlewares/response');
 const register = async (req, res) => {
     const { username, name, email, password } = req.body;
+    if (!username || !name || !email || !password) {
+        return sendBadRequest(res, "Vui lòng điền đầy đủ thông tin!");
+    }
     try {
         const existingUsername = await User.findOne({ username });
         const existingEmail = await User.findOne({ email });
         if (existingUsername) {
-            return res.status(400).json({ message: "Username đã tồn tại" });
+            return sendBadRequest(res, "Username đã tồn tại");
         }
         if (existingEmail) {
-            return res.status(400).json({ message: "Email đã tồn tại" });
+            return sendBadRequest(res, "Email đã tồn tại");
         }
         const user = new User({
             username, name, email, password,
         });
         await user.save();
-        // const accessToken = createAccessToken(user);
-        // const refreshToken = createRefreshToken(user);
-        // return res.status(201).json({ message: "Đăng ký thành công", user });
         const { password: _, ...userWithoutPassword } = user.toObject();
         sendSuccess(res, "Đăng ký thành công", {user: userWithoutPassword})
     } catch (err) {
@@ -40,11 +40,6 @@ const login = async (req, res) => {
         const accessToken = createAccessToken(user);
         const refreshToken = createRefreshToken(user);
         const { password: _, ...userWithoutPassword } = user.toObject();
-
-        // res.status(200).json({
-        //     status: true,
-        //     message: "Đăng nhập thành công",
-        // });
         sendSuccess(res, "Đăng nhập thành công",{accessToken, refreshToken, user: userWithoutPassword})
     } catch (err) {
         console.error(err);
