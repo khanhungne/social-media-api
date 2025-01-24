@@ -16,6 +16,7 @@ import { validateSignupForm } from "../../utils/validation";
 import authScreenAtom from "../../atoms/authAtom";
 import userAtom from "../../atoms/userAtom";
 import { useSetRecoilState } from "recoil";
+import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos'; // Import biểu tượng quay lại
 
 export default function SignupCard() {
   const defaultFormData = {
@@ -142,6 +143,19 @@ export default function SignupCard() {
           p: 4,
         }}
       >
+      <IconButton 
+          onClick={() => setAuthScreenState("login")} 
+          color="default" 
+          sx={{ 
+            alignSelf: "flex-start", 
+            mt: 1, 
+            p: 0, 
+            width: '24px', 
+            height: '24px', 
+          }}
+      >
+        <ArrowBackIosIcon fontSize="small" />
+      </IconButton>
         <Typography component="h1" variant="h5">
           Đăng ký
         </Typography>
@@ -161,7 +175,6 @@ export default function SignupCard() {
             >
               {isSubmitting ? <CircularProgress size={24} /> : "Đăng ký"}
             </Button>
-            {/* thêm cái gì đó để quay lại LOGIN */}
           </Stack>
         </Box>
       </Box>

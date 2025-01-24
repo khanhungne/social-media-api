@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useMemo  } from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css'
 import App from './App.jsx'
@@ -10,34 +10,50 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { ToastProvider } from "./hooks//userShowSnackbar.jsx";
 
-
-const darkTheme = createTheme({
-    palette: {
-      mode: 'dark',
-    },
-    primary: {
-      main: '#fff', // Màu chính
-    },
-    secondary: {
-      main: '#dc004e', // Màu phụ
-    },
-    background: {
-    default: '#101010', // Màu nền tối
-    paper: '#424242', // Màu nền cho các thành phần như Card
-    },
-});
-
-ReactDOM.createRoot(document.getElementById('root')).render(
-  <React.StrictMode>
-    <RecoilRoot>
-      <BrowserRouter>
-      {/* <ThemeProvider theme={}> */}
-          {/* <CssBaseline /> */}
+function Root() {
+  const [mode, setMode] = useState('light');
+  const toggleColorMode = () => {
+    setMode((prevMode) => (prevMode === 'light' ? 'dark' : 'light'));
+  };
+  const theme = useMemo(() => 
+    createTheme({
+      palette: {
+        mode: mode, // light hoặc dark
+        ...(mode === 'dark'
+          ? {
+              background: {
+                default: '#101010',
+                paper: '#424242',
+              },
+              text: {
+                primary: '#ffffff',
+                secondary: '#b0b0b0',
+              },
+            }
+          : {
+              background: {
+                default: '#ffffff',
+                paper: '#f5f5f5',
+              },
+              text: {
+                primary: '#000000',
+                secondary: '#5f5f5f',
+              },
+            }),
+      },
+    }), [mode]
+  );
+  return (
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <RecoilRoot>
+        <BrowserRouter>
           <ToastProvider>
-            <App />
+            <App toggleColorMode={toggleColorMode} mode={mode} />
           </ToastProvider>
-        {/* </ThemeProvider> */}
-      </BrowserRouter>
-    </RecoilRoot>
-  </React.StrictMode>
-)
+        </BrowserRouter>
+      </RecoilRoot>
+    </ThemeProvider>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<Root />);
