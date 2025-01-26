@@ -25,7 +25,10 @@ const isAdmin = async (req, res, next) => {
         const { userId } = req.user;
         const user = await User.findById(userId);
 
-        if (req.user.role !== 'admin') {
+        if (!user) {
+            return sendUnauthorized(res, "Người dùng không tồn tại hoặc chưa được xác thực");
+        }
+        if (user.role !== 'admin') {
             return sendForbidden(res, "Bạn không có quyền truy cập");
         }
         next();

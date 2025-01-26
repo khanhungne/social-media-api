@@ -2,9 +2,9 @@
 const Post = require('../models/post');
 const User = require('../models/user');
 const cloudinary = require('cloudinary').v2;
-const { uploadWithTransformation } = require('../utils/upload');
+const {  deleteMediaFromCloudinary} = require('../utils/upload');
 
-const { sendSuccess, sendBadRequest, sendNotFound, sendServerError } = require('../middlewares/response');
+const { sendSuccess, sendBadRequest, sendNotFound, sendServerError, sendForbidden } = require('../middlewares/response');
 
 const getAllPost = async (req, res) => {
     try {
@@ -19,7 +19,7 @@ const getOnePost = async (req, res) => {
     try {
         const post = await Post.findById(req.params.id);
         if (!post) {
-            sendNotFound(res, "Bài viết không tồn tại");
+            return sendNotFound(res, "Bài viết không tồn tại");
         }
         sendSuccess(res, "Lấy bài viết thành công", post);
     } catch (err) {
@@ -32,44 +32,36 @@ const createPost = async (req, res) => {
         const { userId, content, visibility, tags } = req.body;
         const user = await User.findById(userId);
         if (!user) {
-            return sendBadRequest(res, "Người dùng không tồn tại", post);
-        }
-        if (!content && (req.files || req.files.length === 0)) {
-            return sendBadRequest(res, "Bài viết cần có nội dung hoặc tệp đính kèm", post);
+            return sendBadRequest(res, "Người dùng không tồn tại");
+        }   
+        if ((!content || content.trim() === "") && (!req.files || req.files.length === 0)) {
+            console.log("Nội dung hoặc file bị thiếu: ", { content, files: req.files });
+            return sendBadRequest(res, "Bài viết cần có nội dung hoặc tệp đính kèm");
         }
         const media = [];
         if (req.files && req.files.length > 0) {
-            try {
-                const uploadPromises = req.files.map(file =>uploadWithTransformation(file));
-                const uploadResults = await Promise.all(uploadPromises);
-                uploadResults.forEach(result => {
-                    const resourceType = result.resource_type; 
-                    let type;
-                    if (result.resource_type === 'image') {
-                        type = 'image';
-                    } else if (result.resource_type === 'video') {
-                        type = 'video';
-                    } else if (result.resource_type === 'raw') {
-                        type = 'audio';
-                    } else {
-                        throw new Error(`Không hỗ trợ loại file: ${result.resource_type}`);
-                    }
-                    media.push({
-                        url: result.secure_url,
-                        type,
-                        resourceType
-                    });
+            req.files.forEach(file => {
+                let type;
+                if (file.mimetype.startsWith('image')) {
+                    type = 'image';
+                } else if (file.mimetype.startsWith('video')) {
+                    type = 'video';
+                } else if (file.mimetype.startsWith('audio')) {
+                    type = 'audio';
+                } else {
+                    throw new Error(`Không hỗ trợ loại file: ${file.mimetype}`);
+                }
+                media.push({
+                    url: file.path, 
+                    type,
                 });
-            } catch (err) {
-                console.error("Lỗi cụ thể khi upload lên Cloudinary:", err);
-                return sendServerError(res, "Lỗi khi upload file lên Cloudinary", err);
-            }
+            });
         }
         const newPost = new Post({
             userId,
-            content: content || "",
+            content: content ? content.trim() : "", 
             media,
-            visibility,
+            visibility: visibility || "public",
             tags: Array.isArray(tags) ? tags : (tags ? tags.split(",") : []),
         });
         await newPost.save();
@@ -78,65 +70,65 @@ const createPost = async (req, res) => {
         console.error(err);
         sendServerError(res, "Lỗi server khi tạo bài viết", err);
     }
-}
+};
 const updatePost = async (req, res) => {
     try {
         const { id } = req.params;
         const { content, visibility, tags } = req.body;
-        const media = [];
-        if (req.files && req.files.length > 0) {
-            try {
-                const uploadPromises = req.files.map(file => uploadWithTransformation(file));
-                const uploadResults = await Promise.all(uploadPromises);
-
-                uploadResults.forEach(result => {
-                    media.push({
-                        type: result.resource_type,
-                        url: result.secure_url,
-                    });
-                });
-            } catch (err) {
-                console.error("Lỗi khi upload lên Cloudinary:", err);
-                return sendServerError(res, "Lỗi khi upload file lên Cloudinary", err);
-            }
+        const post = await Post.findById(id);
+        if (!post) {
+            return res.status(404).json({ message: 'Bài viết không tồn tại' });
         }
-        const updatedPost = await Post.findByIdAndUpdate(
-            id,
-            {
-                content: content || undefined,
-                visibility: visibility || undefined,
-                tags: Array.isArray(tags) ? tags : (tags ? tags.split(",") : []),
-                ...(media.length > 0 && { media }) // Chỉ cập nhật media nếu có tệp mới
-            },
-            { new: true }
-        );
-        if (!updatedPost) {
-            return sendBadRequest({ res, message: 'Bài viết không tồn tại' });
-        }        
-        sendSuccess(res, "Cập nhật bài viết thành công", updatedPost);
+        if (post.userId.toString() !== req.user.id) {
+            return res.status(403).json({ message: 'Bạn không có quyền cập nhật bài viết này' });
+        }
+        if (post.media && post.media.length > 0) {
+            await deleteMediaFromCloudinary(post.media);
+        }
+        let media = [];
+        if (req.files && req.files.length > 0) {
+            media = req.files.map(file => ({
+                url: file.path,
+                type: file.mimetype.startsWith('image') ? 'image' : 'video',
+            }));
+        }
+        post.content = content || post.content;
+        post.visibility = visibility || post.visibility;
+        post.tags = Array.isArray(tags) ? tags : (tags ? tags.split(",") : post.tags);
+        if (media.length > 0) {
+            post.media = media;
+        }
+        const updatedPost = await post.save();
+        res.status(200).json({ message: 'Cập nhật bài viết thành công', data: updatedPost });
     } catch (err) {
         console.error(err);
-        sendServerError(res, "Lỗi server khi cập nhật bài viết", err);
+        res.status(500).json({ message: 'Lỗi server khi cập nhật bài viết', error: err });
     }
 };
+
+    
+
 
 const deletePost = async (req, res) => {
     try {
         const { id } = req.params;
-        const post = await Post.findByIdAndDelete(id);
-        if (!post) return sendBadRequest(res, "Bài viết không tìm thấy");
-        if (post.media && post.media.length > 0) {
-            for (const mediaItem of post.media) {
-                const publicId = mediaItem.url.split('/').slice(-1)[0].split('.')[0]; // Lấy public_id từ URL
-                await cloudinary.uploader.destroy(publicId, { resource_type: 'auto' });
-            }
+        const post = await Post.findById(id);
+        if (!post) {
+            return sendBadRequest(res, 'Bài viết không tồn tại');
         }
+        if (post.userId.toString() !== req.user.id) {
+            return sendForbidden(res, 'Bạn không có quyền xóa bài viết này');
+        }
+        await deleteMediaFromCloudinary(post.media);
+        await Post.findByIdAndDelete(id);
         sendSuccess(res, "Xóa bài viết thành công", null);
     } catch (err) {
         console.error(err);
-        sendServerError(res, "Lỗi server khi cập nhật bài viết", err);
+        sendServerError(res, "Lỗi server khi xóa bài viết", err);
     }
 };
+
+
 module.exports = {
     getAllPost,
     getOnePost,

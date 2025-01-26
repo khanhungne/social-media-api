@@ -16,6 +16,13 @@ const commentSchema = new mongoose.Schema(
             type: String,
             required: true,
         },
+        media: [
+            {
+                url: { type: String, required: false },
+                type: { type: String, enum: ['image', 'video'],
+                required: false },
+            },
+        ],
         parentCommentId: {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Comment',
